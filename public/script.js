@@ -1,45 +1,74 @@
-// Information to reach API
-const apiKey = 'apiKey';
-const url = 'https://api.rebrandly.com/v1/links';
+const tmdbKey = 'APIKEY';
+const tmdbBaseUrl = 'https://api.themoviedb.org/3';
+const playBtn = document.getElementById('playBtn');
 
-// Some page elements
-const inputField = document.querySelector('#input');
-const shortenButton = document.querySelector('#shorten');
-const responseField = document.querySelector('#responseField');
-
-// Asynchronous functions
-const shortenUrl = () => {
-  const urlToShorten = inputField.value;
-  const data = JSON.stringify({destination: urlToShorten});
-  
-	fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-      'apikey': apiKey
-    },
-    body: data
-  })
-  .then(response => {
-    if(response.ok) {
-      return response.json();
-    } throw new Error('Request failed!');
-}, networkError => {
-  console.log(networkError.message);
-})
-  .then(jsonResponse => {
-    renderResponse(jsonResponse)
-},
-)
-}
-
-// Clear page and call Asynchronous functions
-const displayShortUrl = (event) => {
-  event.preventDefault();
-  while(responseField.firstChild){
-    responseField.removeChild(responseField.firstChild);
+const getGenres = async () => {
+  const genreRequestEndpoint = '/genre/movie/list';
+  const requestParams = `?api_key=${tmdbKey}`;
+  const urlToFetch = `${tmdbBaseUrl}${genreRequestEndpoint}${requestParams}`;
+  try {
+    const response = await fetch(urlToFetch);
+    if (response.ok) {
+      const jsonResponse = await response.json();
+      //console.log(jsonResponse);
+      const genres = jsonResponse.genres;
+      return genres;
+    }
+  } catch (error) {
+    console.log(error);
   }
-  shortenUrl();
-}
 
-shortenButton.addEventListener('click', displayShortUrl);
+};
+
+const getMovies = async () => {
+  const selectedGenre = getSelectedGenre();
+  const discoverMovieEndpoint = '/discover/movie';
+  const requestParams = `?api_key=${tmdbKey}&with_genre=${selectedGenre}`;
+  const urlToFetch = `${tmdbBaseUrl}${discoverMovieEndpoint}${requestParams}`;
+  try {
+    const response = await fetch(urlToFetch);
+    if (response.ok) {
+      const jsonResponse = await response.json();
+      //console.log(jsonResponse);
+      const movies = jsonResponse.results
+      return movies;
+    }
+  } catch (error) {
+    console.log (error);
+  }
+  
+};
+
+const getMovieInfo = async (movie) => {
+  const movieId = movie.id;
+  const movieEndpoint = `/movie/${movieId}`;
+  const requestParams = `?api_key=${tmdbKey}`;
+  const urlToFetch = `${tmdbBaseUrl}${movieEndpoint}${requestParams}`;
+  try {
+    const reponse = await fetch(urlToFetch);
+    if (response.ok) {
+      const jsonResponse = await response.json();
+      //console.log(jsonResponse);
+      const movieInfo = jsonResponse;
+      return movieInfo;
+    }
+  } catch (error){
+    console.log(error);
+  }
+
+};
+
+// Gets a list of movies and ultimately displays the info of a random movie from the list
+const showRandomMovie = async() => {
+  const movieInfo = document.getElementById('movieInfo');
+  if (movieInfo.childNodes.length > 0) {
+    clearCurrentMovie();
+  };
+  const movies = await getMovies();
+  const randomMovie = getRandomMovie(movies);
+  const info = await getMovieInfo(randomMovie);
+  displayMovie(info);
+};
+
+getGenres().then(populateGenreDropdown);
+playBtn.onclick = showRandomMovie;
